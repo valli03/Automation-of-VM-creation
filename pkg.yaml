@@ -1,0 +1,15 @@
+--- #Playbook to install wireshark and iperf3
+- hosts: localhost
+  vars:
+   pkg1:
+     - wireshark
+   pkg2:
+     - iperf3
+  tasks:                # Defining tasks for the playbook
+    - name: Installing wireshark
+      apt: pkg={{pkg1}} state=present update_cache=yes
+      become: yes
+
+    - name: Installing iperf3
+      apt: pkg={{pkg2}} state=present update_cache=yes
+      become: yes

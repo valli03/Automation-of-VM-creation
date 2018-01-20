@@ -1,0 +1,68 @@
+--- #Playbook to create a VM using Libvirt
+- hosts: localhost
+  gather_facts: no
+  vars:
+    packagesforlibvirt: # Defining variables as a list
+      - qemu-kvm
+      - libvirt-bin
+      - bridge-utils
+      - virtinst
+      - virt-viewer
+      - virt-manager
+
+    qemu_img_path: /var/lib/libvirt/images  # Path where the qemu image of the VM would be stored
+    iso_image: CentOS-7-x86_64-Minimal-1611.iso 
+
+  vars_prompt:          # Defining variables via interactive CLI prompt
+    - name: "username"
+      prompt: "Remote user"
+      private: no
+    - name: "RAM"
+      prompt: "Enter RAM in GB"
+      private: no
+    - name: "qemu_img_size"
+      prompt: "Storage for VM in GB"
+      private: no
+    - name: "network_name1"
+      prompt: "Bridge1 network"
+      private: no
+    - name: "network_name2"
+      prompt: "Bridge2 network"
+      private: no
+    - name: "VM_Name1"
+      prompt: "VM1 Name"
+      private: no
+    - name: "VM_Name2"
+      prompt: "VM2 Name"
+      private: no
+    - name: "VM_Name3"
+      prompt: "VM3 Name"
+      private: no
+  tasks:                # Defining tasks for the playbook
+    - name: Checking if libvirt is already installed
+      stat: path=/var/lib/libvirt
+      register: libvirt
+
+    - name: Installing required packages
+      apt: pkg={{packagesforlibvirt}} state=present update_cache=yes
+      become: yes
+      when: not libvirt.stat.exists
+
+    - name: Adding the user to libvirt group
+      user:
+        name: "{{username}}"
+        group: libvirtd
+      become: yes
+
+    - name: Creating VM1
+      command: virt-install -n "{{VM_Name1}}" -r "{{RAM}}" --disk path="{{qemu_img_path}}"/"{{VM_Name1}}".img,bus=virtio,size="{{qemu_img_size}}" -c /home/"{{username}}"/"{{iso_image}}" --network network="{{network_name1}}",model=virtio --noautoconsole -v
+      become: yes
+      
+    - name: Creating VM2
+      command: virt-install -n "{{VM_Name2}}" -r "{{RAM}}" --disk path="{{qemu_img_path}}"/"{{VM_Name2}}".img,bus=virtio,size="{{qemu_img_size}}" -c /home/"{{username}}"/"{{iso_image}}" --network network="{{network_name1}}" --network network="{{network_name2}}",model=virtio --noautoconsole -v
+      become: yes
+
+       
+    - name: Creating VM3
+      command: virt-install -n "{{VM_Name3}}" -r "{{RAM}}" --disk path="{{qemu_img_path}}"/"{{VM_Name3}}".img,bus=virtio,size="{{qemu_img_size}}" -c /home/"{{username}}"/"{{iso_image}}" --network network="{{network_name2}}",model=virtio --noautoconsole -v
+      become: yes
